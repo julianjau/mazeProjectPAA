@@ -1,0 +1,327 @@
+import java.awt.BorderLayout;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JButton;
+import javax.swing.JOptionPane;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Dimension;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.Timer;
+import java.util.Random;
+import java.awt.Point;
+import java.util.LinkedList;
+import java.util.Queue;
+
+public class MyFrame extends JFrame {
+
+    private static final int SIZE = 17;
+    private static final int CELL_SIZE = 40;
+
+    private static final Color WALL_COLOR = Color.BLACK;
+    private static final Color PATH_COLOR = Color.WHITE;
+    private static final Color PLAYER1_COLOR = Color.RED;
+    private static final Color PLAYER2_COLOR = Color.GREEN;
+
+    private char[][] maze;
+    private int player1X;
+    private int player1Y;
+    private int player2X;
+    private int player2Y;
+    private boolean player1Visible;
+    private boolean player2Visible;
+
+    public MyFrame() {
+        setTitle("Maze Game");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setVisible(true);
+        setLayout(new BorderLayout());
+
+        MazePanel mazePanel = new MazePanel();
+        add(mazePanel, BorderLayout.CENTER);
+
+        JPanel sidePanel = new JPanel();
+        sidePanel.setLayout(new GridLayout(7, 1));
+
+        JButton startButton = new JButton("Mulai Permainan");
+        startButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mazePanel.startGame();
+            }
+        });
+        sidePanel.add(startButton);
+
+        JButton stopButton = new JButton("Hentikan Permainan");
+        stopButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mazePanel.stopGame();
+            }
+        });
+        sidePanel.add(stopButton);
+
+        JButton shuffleMazeButton = new JButton("Acak Peta");
+        shuffleMazeButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mazePanel.shuffleMaze();
+            }
+        });
+        sidePanel.add(shuffleMazeButton);
+
+        JButton shufflePlayer1Button = new JButton("Acak Pemain 1");
+        shufflePlayer1Button.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mazePanel.shufflePlayer1();
+            }
+        });
+        sidePanel.add(shufflePlayer1Button);
+
+        JButton shufflePlayer2Button = new JButton("Acak Pemain 2");
+        shufflePlayer2Button.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                mazePanel.shufflePlayer2();
+            }
+        });
+        sidePanel.add(shufflePlayer2Button);
+        add(sidePanel, BorderLayout.EAST);
+
+        pack();
+        setLocationRelativeTo(null);
+    }
+
+    private class MazePanel extends JPanel implements ActionListener {
+        private Timer timer;
+        private boolean gameRunning;
+
+        public MazePanel() {
+            generateMaze();
+            placePlayers();
+            gameRunning = false;
+
+            setPreferredSize(new Dimension(CELL_SIZE * SIZE, CELL_SIZE * SIZE));
+            setBackground(Color.WHITE);
+
+            timer = new Timer(100, this);
+        }
+
+        public void startGame() {
+            if (!gameRunning) {
+                gameRunning = true;
+                timer.start();
+            }
+        }
+
+        public void stopGame() {
+            if (gameRunning) {
+                gameRunning = false;
+                timer.stop();
+            }
+        }
+
+        public void shuffleMaze() {
+            generateMaze();
+            placePlayers();
+            repaint();
+        }
+
+        public void shufflePlayer1() {
+            Random random = new Random();
+            int x, y;
+            do {
+                x = random.nextInt(SIZE);
+                y = random.nextInt(SIZE);
+            } while (!isValidMove(x, y));
+            player1X = x;
+            player1Y = y;
+            repaint();
+        }
+
+        public void shufflePlayer2() {
+            Random random = new Random();
+            int x, y;
+            do {
+                x = random.nextInt(SIZE);
+                y = random.nextInt(SIZE);
+            } while (!isValidMove(x, y));
+            player2X = x;
+            player2Y = y;
+            repaint();
+        }
+
+        public void generateMaze() {
+            maze = new char[SIZE][SIZE];
+
+            for (int i = 0; i < SIZE; i++) {
+                for (int j = 0; j < SIZE; j++) {
+                    if (i == 0 || i == SIZE - 1 || j == 0 || j == SIZE - 1)
+                        maze[i][j] = '#';
+                    else
+                        maze[i][j] = '.';
+                }
+            }
+
+            Random random = new Random();
+            for (int i = 0; i < SIZE; i++) {
+                for (int j = 0; j < SIZE; j++) {
+                    if (maze[i][j] == '.' && random.nextDouble() < 0.3) {
+                        maze[i][j] = '#';
+                    }
+                }
+            }
+        }
+
+        public void placePlayers() {
+            player1X = 1;
+            player1Y = 1;
+            player2X = SIZE - 2;
+            player2Y = SIZE - 2;
+            player1Visible = true;
+            player2Visible = true;
+        }
+
+        public boolean isValidMove(int x, int y) {
+            return maze[y][x] == '.';
+        }
+
+        public void paintComponent(Graphics g) {
+            super.paintComponent(g);
+
+            for (int i = 0; i < SIZE; i++) {
+                for (int j = 0; j < SIZE; j++) {
+                    int x = j * CELL_SIZE;
+                    int y = i * CELL_SIZE;
+
+                    if (maze[i][j] == '#')
+                        g.setColor(WALL_COLOR);
+                    else
+                        g.setColor(PATH_COLOR);
+
+                    g.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+
+                   if (player1Visible && i == player1Y && j == player1X) {
+                       g.setColor(PLAYER1_COLOR);
+                       g.fillOval(x + 5, y + 5, CELL_SIZE - 10, CELL_SIZE - 10);
+                    }
+
+                    if (player2Visible && i == player2Y && j == player2X) {
+                        g.setColor(PLAYER2_COLOR);
+                        g.fillOval(x + 5, y + 5, CELL_SIZE - 10, CELL_SIZE - 10);
+                    }
+                }
+            }
+        }
+
+        public void actionPerformed(ActionEvent e) {
+            movePlayers();
+            checkCollision();
+            repaint();
+        }
+
+        public void movePlayers() {
+            movePlayer2();
+            
+            if (player1Visible) {
+                movePlayer1();
+            }
+        }
+// pergerakan merah
+        private void movePlayer1() {
+            int[][] distance = new int[SIZE][SIZE];
+            boolean[][] visited = new boolean[SIZE][SIZE];
+
+            for (int i = 0; i < SIZE; i++) {
+                for (int j = 0; j < SIZE; j++) {
+                    distance[i][j] = Integer.MAX_VALUE;
+                }
+            }
+
+            distance[player2Y][player2X] = 0;
+
+            Queue<Point> queue = new LinkedList<>();
+            queue.offer(new Point(player2X, player2Y));
+
+           while (!queue.isEmpty()) {
+                Point current = queue.poll();
+                int x = current.x;
+                int y = current.y;
+
+                if (x == player1X && y == player1Y) {
+                    break; // Pemain 1 telah mencapai pemain 2, keluar dari loop
+                }
+
+                int[] dx = {0, 1, 0, -1};
+                int[] dy = {-1, 0, 1, 0};
+
+                for (int i = 0; i < 4; i++) {
+                    int nx = x + dx[i];
+                    int ny = y + dy[i];
+
+                    if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && isValidMove(nx, ny) && !visited[ny][nx]) {
+                        visited[ny][nx] = true;
+                        distance[ny][nx] = distance[y][x] + 1;
+                        queue.offer(new Point(nx, ny));
+                    }
+                }
+            }
+
+            int newX = player1X;
+            int newY = player1Y;
+
+            int minDistance = Integer.MAX_VALUE;
+
+            int[] dx = {0, 1, 0, -1};
+            int[] dy = {-1, 0, 1, 0};
+
+            for (int i = 0; i < 4; i++) {
+                int nx = player1X + dx[i];
+                int ny = player1Y + dy[i];
+
+                if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && isValidMove(nx, ny) && distance[ny][nx] < minDistance) {
+                    minDistance = distance[ny][nx];
+                    newX = nx;
+                    newY = ny;
+                }
+            }
+
+            player1X = newX;
+            player1Y = newY;
+        }
+
+        private void movePlayer2() {
+            Random random = new Random();
+            int move = random.nextInt(4);
+            int newX = player2X;
+            int newY = player2Y;
+
+            switch (move) {
+                case 0: // atas
+                    newY--;
+                    break;
+                case 1: // kanan
+                    newX++;
+                    break;
+                case 2: // bawah
+                    newY++;
+                    break;
+                case 3: // kiri
+                    newX--;
+                    break;
+            }
+
+            if (isValidMove(newX, newY)) {
+                player2X = newX;
+                player2Y = newY;
+            }
+        }
+
+        public void checkCollision() {
+            if (player1X == player2X && player1Y == player2Y) {
+                JOptionPane.showMessageDialog(this, "droid merah menemukan droid hijau!", "Menangkap!", JOptionPane.INFORMATION_MESSAGE);
+                stopGame();
+                placePlayers();
+                repaint();
+            }
+        }
+    }
+}
